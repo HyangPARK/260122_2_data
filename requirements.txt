@@ -3,6 +3,7 @@ pandas
 numpy
 plotly
 scipy
-requests
-openai
 youtube-transcript-api
+trafilatura
+openai
+requests
