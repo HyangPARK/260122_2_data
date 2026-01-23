@@ -15,7 +15,7 @@ st.set_page_config(page_title="시험점수 데이터 분석", layout="wide")
 # -----------------------------
 # 기본 설정
 # -----------------------------
-기본_데이터_파일 = "Exam_Score_Prediction.csv"
+기본_데이터_파일 = "ES_Pre.csv"
 데이터_출처_URL = "https://www.kaggle.com/datasets/kundanbedmutha/exam-score-prediction-dataset"
 
 기대_열 = [
