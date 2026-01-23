@@ -50,7 +50,7 @@ COURSE_VIDEOS = {
 @st.cache_data(show_spinner=False)
 def load_default_data():
     # ✅ 리포지토리에 Exam_Score_Prediction.csv 포함 시 기본 탑재 데이터로 로드
-    return pd.read_csv("Exam_Score_Prediction.csv")
+    return pd.read_csv("ES_Pre.csv")
 
 def read_uploaded_csv(file) -> pd.DataFrame:
     content = file.read()
