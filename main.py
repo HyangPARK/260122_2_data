@@ -1,4 +1,3 @@
-import os
 import io
 import numpy as np
 import pandas as pd
@@ -14,7 +13,7 @@ st.set_page_config(page_title="시험점수 데이터 분석", layout="wide")
 # -----------------------------
 # 기본 설정
 # -----------------------------
-기본_데이터_파일 = "Exam_Score_Prediction.csv"
+기본_데이터_파일 = "ES_Pre.csv"
 데이터_출처_URL = "https://www.kaggle.com/datasets/kundanbedmutha/exam-score-prediction-dataset"
 
 기대_열 = [
@@ -25,9 +24,9 @@ st.set_page_config(page_title="시험점수 데이터 분석", layout="wide")
 
 수치형_열 = ["student_id", "age", "study_hours", "class_attendance", "sleep_hours", "exam_score"]
 
-# ✅ (추가) 변수 설명(차례대로)
+# (요청) 변수 설명(차례대로)
 변수_설명 = [
-    {"변수명": "student_id", "설명": "학생 고유 번호(식별자). 분석에서는 보통 제외합니다.", "예시": "10001"},
+    {"변수명": "student_id", "설명": "학생 고유 번호(식별자). 보통 분석에서는 제외합니다.", "예시": "10001"},
     {"변수명": "age", "설명": "나이", "예시": "19"},
     {"변수명": "gender", "설명": "성별 (male/female/other)", "예시": "female"},
     {"변수명": "course", "설명": "과목(수강 과목)", "예시": "Mathematics"},
@@ -36,11 +35,18 @@ st.set_page_config(page_title="시험점수 데이터 분석", layout="wide")
     {"변수명": "internet_access", "설명": "인터넷 이용 가능 여부 (yes/no)", "예시": "yes"},
     {"변수명": "sleep_hours", "설명": "수면시간(시간)", "예시": "7.0"},
     {"변수명": "sleep_quality", "설명": "수면의 질 (good/average/poor)", "예시": "good"},
-    {"변수명": "study_method", "설명": "공부 방식(예: self study, group study 등)", "예시": "Self Study"},
+    {"변수명": "study_method", "설명": "공부 방식(예: 혼자/그룹/온라인 등)", "예시": "Self Study"},
     {"변수명": "facility_rating", "설명": "시설 만족도(등급/범주형)", "예시": "High"},
     {"변수명": "exam_difficulty", "설명": "시험 난이도(등급/범주형)", "예시": "Medium"},
     {"변수명": "exam_score", "설명": "시험 점수(0~100점)", "예시": "78.0"},
 ]
+
+# (요청) 성별 그래프 대비 색상
+성별_색상 = {
+    "male": "#1f77b4",    # 파랑
+    "female": "#ff7f0e",  # 주황
+    "other": "#2ca02c"    # 초록(있으면)
+}
 
 # -----------------------------
 # 데이터 로딩/검증
@@ -68,8 +74,42 @@ def 타입_정리(df: pd.DataFrame) -> pd.DataFrame:
         df[c] = df[c].astype(str)
     return df
 
-# ✅ (추가) 첫 화면: 출처 + 데이터 소개 + 변수 설명 + 기본 내용
+# -----------------------------
+# 0) 데이터 소개 탭 (귀여운 이미지 포함)
+# -----------------------------
+def 귀여운_SVG():
+    # 외부 이미지 없이, 앱 내부에 귀여운 캐릭터 SVG를 넣습니다.
+    return """
+    <div style="display:flex; gap:16px; align-items:center; padding:12px 14px; border-radius:16px; background:#f6f8ff;">
+      <svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cute mascot">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#b8c6ff"/>
+            <stop offset="1" stop-color="#ffe3f1"/>
+          </linearGradient>
+        </defs>
+        <circle cx="48" cy="48" r="44" fill="url(#g)"/>
+        <circle cx="34" cy="42" r="6" fill="#2d2d2d"/>
+        <circle cx="62" cy="42" r="6" fill="#2d2d2d"/>
+        <circle cx="32" cy="44" r="2" fill="#ffffff"/>
+        <circle cx="60" cy="44" r="2" fill="#ffffff"/>
+        <path d="M44 52 Q48 58 52 52" stroke="#2d2d2d" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M30 60 Q48 72 66 60" stroke="#2d2d2d" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="26" cy="54" r="6" fill="#ffb3c7" opacity="0.9"/>
+        <circle cx="70" cy="54" r="6" fill="#ffb3c7" opacity="0.9"/>
+      </svg>
+      <div>
+        <div style="font-size:18px; font-weight:700;">시험점수 데이터 분석 놀이터</div>
+        <div style="font-size:14px; color:#555; margin-top:4px;">
+          데이터 출처와 변수 설명을 먼저 보고, 탭에서 분석 결과를 확인할 수 있어요.
+        </div>
+      </div>
+    </div>
+    """
+
 def 첫페이지_데이터_소개(df: pd.DataFrame):
+    st.markdown(귀여운_SVG(), unsafe_allow_html=True)
+
     st.subheader("데이터 출처")
     st.write("이 웹앱은 아래 데이터셋을 기반으로 분석합니다.")
     st.markdown(f"- Kaggle: [{데이터_출처_URL}]({데이터_출처_URL})")
@@ -81,53 +121,32 @@ def 첫페이지_데이터_소개(df: pd.DataFrame):
     c3.metric("결측치(비어있는 값)", f"{int(df.isna().sum().sum()):,}")
 
     st.write("**데이터 예시(앞 10행)**")
-    st.dataframe(df.head(10))
+    st.dataframe(df.head(10), use_container_width=True)
 
     st.subheader("변수(열) 설명")
     st.write("아래는 데이터에 들어있는 변수들을 **차례대로** 설명한 것입니다.")
     st.dataframe(pd.DataFrame(변수_설명), use_container_width=True)
 
-    st.subheader("간단한 분포/구성 확인")
-    st.write("**과목(course)별 학생 수(상위 10개)**")
+    st.subheader("간단히 보기")
+    # 과목 상위 10개
     top_course = df["course"].value_counts().head(10).reset_index()
     top_course.columns = ["course", "count"]
     fig = px.bar(top_course, x="course", y="count", title="과목별 학생 수(상위 10개)")
     fig.update_layout(xaxis_title="과목", yaxis_title="학생 수")
     st.plotly_chart(fig, use_container_width=True)
 
-    st.write("**시험점수(exam_score) 분포**")
+    # 시험점수 분포
     fig2 = px.histogram(df.dropna(subset=["exam_score"]), x="exam_score", nbins=30, title="시험점수 분포")
     fig2.update_layout(xaxis_title="시험점수", yaxis_title="학생 수")
     st.plotly_chart(fig2, use_container_width=True)
 
 # -----------------------------
-# 기존: 데이터 점검 탭
-# -----------------------------
-def 데이터_요약(df: pd.DataFrame):
-    st.subheader("데이터 점검(결측치 등)")
-    c1, c2 = st.columns([1, 1])
-
-    with c1:
-        st.write("**데이터 크기**")
-        st.write({"행(학생 수)": int(df.shape[0]), "열(변수 수)": int(df.shape[1])})
-
-        st.write("**결측치(비어있는 값) 개수(열별)**")
-        na = df.isna().sum().sort_values(ascending=False)
-        st.dataframe(na)
-
-    with c2:
-        st.write("**수치형 요약(최소/평균/최대 등)**")
-        st.dataframe(df[["age","study_hours","class_attendance","sleep_hours","exam_score"]].describe().T)
-
-    st.caption("※ 업로드 데이터가 있으면 자동으로 업로드 데이터로 분석됩니다.")
-
-# -----------------------------
-# 분석 1: 공부시간 vs 시험점수
+# 1) 공부시간 vs 시험점수
 # -----------------------------
 def 분석_공부시간_시험점수(df: pd.DataFrame):
     st.subheader("1) 공부시간이 늘면 시험점수가 올라가나요?")
 
-    d = df[["study_hours","exam_score"]].dropna()
+    d = df[["study_hours", "exam_score"]].dropna()
     x = d["study_hours"].astype(float).values
     y = d["exam_score"].astype(float).values
 
@@ -139,9 +158,10 @@ def 분석_공부시간_시험점수(df: pd.DataFrame):
     c2.metric("p값", f"{p:.3f}")
     c3.metric("대략적인 증가폭", f"+{reg.slope:.2f}점/1시간")
 
-    st.write("- r이 **0에 가까우면 관계가 약하고**, **1에 가까우면 함께 증가하는 경향**이 큽니다.")
-    st.write("- 여기서는 **공부시간이 늘수록 시험점수가 높아지는 경향**이 보입니다.")
+    st.write("- 상관계수(r)는 **공부시간과 점수가 함께 움직이는 정도**를 보여줍니다.")
+    st.write("- 여기서는 **공부시간이 늘수록 점수가 높아지는 경향**이 보입니다.")
 
+    # 간단 그래프(점 + 추세선)
     fig = px.scatter(d, x="study_hours", y="exam_score", opacity=0.35,
                      title="공부시간과 시험점수 (점 + 추세선)")
     xs = np.linspace(x.min(), x.max(), 200)
@@ -151,72 +171,123 @@ def 분석_공부시간_시험점수(df: pd.DataFrame):
     st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------
-# 분석 2: 성별 평균 비교
+# 2) 성별 평균 비교 (대비색 적용)
 # -----------------------------
 def 분석_성별_평균(df: pd.DataFrame):
     st.subheader("2) 남/여 시험점수 평균이 다를까요?")
 
-    d = df[df["gender"].isin(["male","female"])][["gender","exam_score"]].dropna()
+    d = df[df["gender"].isin(["male", "female"])][["gender", "exam_score"]].dropna()
 
-    summary = d.groupby("gender")["exam_score"].agg(["count","mean","std"]).reset_index()
+    summary = d.groupby("gender")["exam_score"].agg(["count", "mean", "std"]).reset_index()
     summary["SE"] = summary["std"] / np.sqrt(summary["count"])
-    summary = summary.rename(columns={"gender":"성별","count":"사람수","mean":"평균점수","std":"표준편차"})
-    st.dataframe(summary)
+    summary = summary.rename(columns={"gender": "성별", "count": "사람수", "mean": "평균점수", "std": "표준편차"})
+    st.write("**요약 표**")
+    st.dataframe(summary, use_container_width=True)
 
-    a = d[d["gender"]=="female"]["exam_score"].astype(float)
-    b = d[d["gender"]=="male"]["exam_score"].astype(float)
+    a = d[d["gender"] == "female"]["exam_score"].astype(float)
+    b = d[d["gender"] == "male"]["exam_score"].astype(float)
     t = stats.ttest_ind(a, b, equal_var=False)
-
     diff = float(a.mean() - b.mean())
-    st.write(f"- 평균 차이(여-남): **{diff:.3f}점**")
-    st.write(f"- p값: **{t.pvalue:.3f}** (보통 p값이 0.05보다 작으면 '차이가 있다'고 보는 경우가 많습니다)")
 
-    fig1 = px.box(d, x="gender", y="exam_score", points="outliers",
-                  title="성별 시험점수 분포(박스플롯)")
-    fig1.update_layout(xaxis_title="성별(male/female)", yaxis_title="시험점수")
+    st.write(f"- 평균 차이(여-남): **{diff:.3f}점**")
+    st.write(f"- p값: **{t.pvalue:.3f}** (보통 0.05보다 작으면 ‘차이가 있다’고 보는 경우가 많습니다)")
+
+    # 대비 색 적용: boxplot
+    fig1 = px.box(
+        d, x="gender", y="exam_score", color="gender", points="outliers",
+        color_discrete_map=성별_색상,
+        title="성별 시험점수 분포(박스플롯)"
+    )
+    fig1.update_layout(xaxis_title="성별", yaxis_title="시험점수", legend_title_text="성별")
     st.plotly_chart(fig1, use_container_width=True)
 
-    fig2 = px.bar(summary, x="성별", y="평균점수", error_y="SE",
-                  title="성별 평균 시험점수(평균 ± 표준오차)")
-    fig2.update_layout(yaxis_title="평균 시험점수")
+    # 대비 색 적용: bar
+    fig2 = px.bar(
+        summary, x="성별", y="평균점수", error_y="SE", color="성별",
+        color_discrete_map={"male": 성별_색상["male"], "female": 성별_색상["female"]},
+        title="성별 평균 시험점수(평균 ± 표준오차)"
+    )
+    fig2.update_layout(yaxis_title="평균 시험점수", legend_title_text="성별")
     st.plotly_chart(fig2, use_container_width=True)
 
 # -----------------------------
-# 분석 3: 인터넷 이용 vs 수면의 질(좋음/나쁨 비율)
+# 3) 인터넷 이용 vs 수면의 질(좋음/나쁨 비율)
 # -----------------------------
 def 분석_인터넷_수면질(df: pd.DataFrame):
-    st.subheader("3) 인터넷 이용 여부에 따라 수면의 질이 다를까요?")
+    st.subheader("3) 인터넷 이용 여부에 따라 수면의 질이 다를까요? (좋음/나쁨)")
 
-    d = df[["internet_access","sleep_quality"]].dropna()
-    d2 = d[d["sleep_quality"].isin(["good","poor"])].copy()
+    d = df[["internet_access", "sleep_quality"]].dropna()
+    d2 = d[d["sleep_quality"].isin(["good", "poor"])].copy()
 
     ct = pd.crosstab(d2["internet_access"], d2["sleep_quality"])
-    ct = ct.rename(index={"yes":"인터넷 사용", "no":"인터넷 미사용"},
-                   columns={"good":"좋음", "poor":"나쁨"})
+    ct = ct.rename(index={"yes": "인터넷 사용", "no": "인터넷 미사용"},
+                   columns={"good": "좋음", "poor": "나쁨"})
 
     st.write("**사람 수(교차표)**")
-    st.dataframe(ct)
+    st.dataframe(ct, use_container_width=True)
 
     pct = (ct.div(ct.sum(axis=1), axis=0) * 100).round(2)
     st.write("**비율(%)**")
-    st.dataframe(pct)
+    st.dataframe(pct, use_container_width=True)
 
     if ct.shape[0] >= 2 and ct.shape[1] >= 2:
         chi2, p, dof, _ = stats.chi2_contingency(ct)
         c1, c2 = st.columns(2)
         c1.metric("p값", f"{p:.3f}")
         c2.metric("카이제곱", f"{chi2:.3f}")
-        st.caption("※ p값이 0.05보다 작으면 '인터넷 이용 여부에 따라 수면의 질(좋음/나쁨) 비율이 다르다'고 해석하는 경우가 많습니다.")
+        st.caption("※ p값이 0.05보다 작으면 ‘좋음/나쁨 비율이 다르다’고 해석하는 경우가 많습니다.")
 
     long = pct.reset_index().melt(id_vars="internet_access", var_name="수면의 질", value_name="비율(%)")
-    fig = px.bar(long, x="internet_access", y="비율(%)", color="수면의 질",
-                 barmode="stack",
-                 title="인터넷 이용 여부에 따른 수면의 질 비율(좋음/나쁨)")
+    fig = px.bar(
+        long, x="internet_access", y="비율(%)", color="수면의 질",
+        barmode="stack",
+        title="인터넷 이용 여부에 따른 수면의 질 비율(좋음/나쁨)"
+    )
     fig.update_layout(xaxis_title="", yaxis_title="비율(%)")
     st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------
-# 4) 과목별 동영상 검색 (YouTube)
+# (추가) 4) 공부 방식(study_method)별 시험점수 평균 비교 (표 + 그래프)
+# -----------------------------
+def 분석_공부방식_평균(df: pd.DataFrame):
+    st.subheader("4) 공부 방식에 따라 시험점수 평균이 다를까요?")
+
+    d = df[["study_method", "exam_score"]].dropna()
+
+    summary = (
+        d.groupby("study_method")["exam_score"]
+        .agg(["count", "mean", "std"])
+        .reset_index()
+        .rename(columns={"study_method": "공부 방식", "count": "사람수", "mean": "평균점수", "std": "표준편차"})
+    )
+    summary["표준오차(SE)"] = summary["표준편차"] / np.sqrt(summary["사람수"])
+    summary = summary.sort_values("평균점수", ascending=False)
+
+    st.write("**공부 방식별 요약 표(평균점수 높은 순)**")
+    st.dataframe(summary, use_container_width=True)
+
+    # 평균 막대 + 오차막대
+    fig = px.bar(
+        summary,
+        x="공부 방식",
+        y="평균점수",
+        error_y="표준오차(SE)",
+        title="공부 방식별 평균 시험점수(평균 ± 표준오차)"
+    )
+    fig.update_layout(xaxis_title="공부 방식", yaxis_title="평균 시험점수")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 분포 박스플롯도 함께(선택적으로)
+    fig2 = px.box(
+        d, x="study_method", y="exam_score",
+        title="공부 방식별 점수 분포(박스플롯)",
+        points="outliers"
+    )
+    fig2.update_layout(xaxis_title="공부 방식", yaxis_title="시험점수")
+    st.plotly_chart(fig2, use_container_width=True)
+
+# -----------------------------
+# 5) 과목별 동영상 검색 (YouTube)
 # -----------------------------
 def 유튜브_검색_리스트(query: str, max_results: int = 6):
     api_key = st.secrets.get("YOUTUBE_API_KEY", None)
@@ -248,12 +319,16 @@ def 유튜브_검색_리스트(query: str, max_results: int = 6):
             })
         return {"mode": "api", "items": items}
     else:
-        return {"mode": "link", "search_url": f"https://www.youtube.com/results?search_query={quote_plus(query)}", "items": []}
+        return {
+            "mode": "link",
+            "search_url": f"https://www.youtube.com/results?search_query={quote_plus(query)}",
+            "items": []
+        }
 
 def 분석_과목별_동영상(df: pd.DataFrame):
-    st.subheader("4) 과목별로 '점수 올리는 방법' 동영상 찾기")
+    st.subheader("5) 과목별로 '점수 올리는 방법' 동영상 찾기")
 
-    st.write("원하는 키워드를 입력하면, 과목과 함께 검색해 관련 동영상을 찾습니다.")
+    st.write("검색어를 입력하면, 선택한 과목과 함께 검색해서 관련 동영상을 찾습니다.")
     st.caption("YouTube API 키가 있으면 앱에서 목록/미리보기가 더 깔끔합니다. (없어도 검색 링크는 제공됩니다)")
 
     col1, col2 = st.columns([2, 1])
@@ -272,7 +347,7 @@ def 분석_과목별_동영상(df: pd.DataFrame):
             if result["mode"] == "link":
                 st.info("현재 YouTube API 키가 설정되어 있지 않아, 유튜브 검색 링크로 안내합니다.")
                 st.link_button("유튜브에서 검색 결과 열기", result["search_url"])
-                st.write("원하시면 Streamlit Cloud의 Secrets에 `YOUTUBE_API_KEY`를 추가해 API 방식으로도 동작하게 할 수 있습니다.")
+                st.write("원하시면 Streamlit Cloud의 Secrets에 `YOUTUBE_API_KEY`를 추가하면, 앱에서 바로 목록/미리보기가 됩니다.")
             else:
                 items = result["items"]
                 if not items:
@@ -290,7 +365,7 @@ def 분석_과목별_동영상(df: pd.DataFrame):
 # 메인
 # -----------------------------
 def main():
-    st.title("시험점수 데이터 분석 웹앱 (한글/쉬운 용어)")
+    st.title("시험점수 데이터 분석 웹앱")
 
     st.sidebar.header("데이터 선택")
     uploaded_files = st.sidebar.file_uploader(
@@ -335,30 +410,28 @@ def main():
     df = df[[c for c in 기대_열 if c in df.columns]]
     df = 타입_정리(df)
 
-    # ✅ (변경) 맨 앞 탭을 “데이터 소개(출처/변수설명)”로 구성
-    tabs = st.tabs(["0) 데이터 소개", "데이터 점검", "1) 공부시간", "2) 성별 비교", "3) 인터넷·수면질", "4) 동영상 찾기"])
+    # (요청) 데이터 점검 탭 제거 → 소개 + 분석만
+    tabs = st.tabs(["0) 데이터 소개", "1) 공부시간", "2) 성별 비교", "3) 인터넷·수면질", "4) 공부 방식", "5) 동영상 찾기"])
 
     with tabs[0]:
         첫페이지_데이터_소개(df)
 
     with tabs[1]:
-        데이터_요약(df)
-
-    with tabs[2]:
         분석_공부시간_시험점수(df)
 
-    with tabs[3]:
+    with tabs[2]:
         분석_성별_평균(df)
 
-    with tabs[4]:
+    with tabs[3]:
         분석_인터넷_수면질(df)
+
+    with tabs[4]:
+        분석_공부방식_평균(df)
 
     with tabs[5]:
         분석_과목별_동영상(df)
 
-    st.divider()
-    st.caption("배포: GitHub에 app.py, requirements.txt, Exam_Score_Prediction.csv를 올리고 Streamlit Cloud에서 app.py를 실행 파일로 지정하세요.")
-    st.caption("YouTube API 사용: Streamlit Cloud > App settings > Secrets에 YOUTUBE_API_KEY를 추가하면 됩니다.")
+    # (요청) 페이지 하단 배포 문구 삭제 → 아무것도 출력하지 않음
 
 if __name__ == "__main__":
     main()
