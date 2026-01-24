@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.inspection import permutation_importance
 
-DATA_PATH = "Exam_Score_Prediction.csv"
+DATA_PATH = "ES_Pre.csv"
 
 st.set_page_config(page_title="ML 점수 예측", layout="wide")
 st.title("📈 ML로 시험 점수 예측해보기")
